@@ -1,0 +1,4 @@
+base_dir           /Users/hoover/WRF_QOIP/nov2019_q/workspace
+wrfplus_repo_dir   /Users/morgan/WRFPLUSV3
+namelist_repo_dir  /Users/hoover/WRF_QOIP/nov2019_q/namelists
+util_repo_dir      /Users/hoover/WRF_QOIP/nov2019_q/util

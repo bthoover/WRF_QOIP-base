@@ -1,0 +1,71 @@
+PYTHON/NCL INSTRUCTIONS
+
+You need to have a conda environment that contains the following elements:
+
+    o numpy
+    o netCDF4
+    o ncl
+
+This environment is activated in the exec_*.sh scripts in the /util/ directory, and is used to run python scripts. If you don't have a native NCL installed, run_adj.csh may need to be modified to call the *.ncl script inside of a bash shell environment with your conda environment loaded.
+
+NAMELIST INSTRUCTIONS
+
+You need three namelists set up in advance of running the iterator:
+
+    o namelist.input.trj: The namelist for producing the nonlinear forward trajectory for the outer-loop. This requires that auxhist6 is set up to save the model state at every time-step.
+    o namelist.input.trj_inner: The namelist for producing the nonlinear forward trajectory for the inner-loop. This does not include the auxhist6 output, and should ideally be set up to only produce output files at the beginning and end of the model run (to save i/o), but otherwise is identical to namelist.input.trj
+    o namelist.input.adj: The namelist for running the adjoint model. This requires the additional inputs for the basic-state at every time-step.
+
+Namelists are stored in the namelist_repo_dir defined in your directory_tree.txt (see RUNNING INSTRUCTIONS, below).
+
+ADJOINT INITIALIZATION INSTRUCTIONS
+
+You need to set up an adjoint-initialization (*.ncl) script in advance of running the iterator. This script will be called upon in run_adj.csh (see RUNNING INSTRUCTIONS, below) to initialize the adjoint. As currently set-up, the iterator stops between each iteration, which gives the user an opportunity to run and look at the perturbed simulation, in case you want to modify the adjoint-initialization for the next iteration. You may want to do this if, for example, your interest is in modifying a specific weather feature and the response function domain is defined geographically by some aspect of that weather feature (e.g. a box centered on the minimum sea-level pressure of a cyclone), and the cyclone migrates a little as a result of the last iteration's perturbation to the initial state. You can reset the bounds of the response function domain to re-center over the new location of the weather feature for the next iteration.
+
+The adjoint-initialization (*.ncl) script is stored in the util_repo_dir defined in your directory_tree.txt and is called by-name in run_adj.csh (see RUNNING INSTRUCTIONS, below).
+
+RUNNING INSTRUCTIONS
+
+1. Define a base-directory, which will house all working sub-directories and contain your archive of iterations
+
+2. Copy the following run-scripts to your base-directory:
+    o run_iteration.csh
+    o run_trj.csh
+    o run_adj.csh
+    o run_compute_optimal_perturbation.sh
+    o run_add_optimal_perturbation.sh
+    o run_compute_R_error.sh
+    o run_trj_inner_loop.csh
+    o run_archive_and_cleanup.sh
+
+3. Define a directory-tree in a file in your base-directory called directory_tree.txt. This is a text file that specifies the location of key directories the scripts will access. Those directories are:
+    o base_dir = your base-directory
+    o wrfplus_repo_dir = the /em_real/ directory containing your compiled wrf.exe and table files
+    o namelist_repo_dir = a directory containing the namelists for your trajectory and adjoint runs
+    o util_repo_dir = a directory containing scripts and python code called by the run-scripts
+
+Example directory_tree.txt
+base_dir           /tornado/home1/class/fall03/hoover/WRF_QOIP/workspace3
+wrfplus_repo_dir   /tornado/home1/class/fall06/morgan/WRFPLUSV3
+namelist_repo_dir  /tornado/home1/class/fall03/hoover/WRF_QOIP/case_init/Dec-15-2020/
+util_repo_dir      /tornado/home1/class/fall03/hoover/WRF_QOIP/util
+
+4. Create an archive subdirectory in your base-directory, and a sub-directory within /archive/ for your first iteration: mkdir -p <base-dir>/archive/iter_00
+
+5. Copy your wrfinput_d01 and wrfbdy_d01 files to <base-dir>/archive/iter_00/.
+
+6. In run_iteration.csh, specify required settings (see script for details)
+
+7. In run_adj.csh, specify your adjoint forcing (*.ncl) script in this (e.g.) line:
+
+ln -sf ${util_repo_dir}/adj_forcing_tmpgrad.ncl adj_forcing.ncl
+
+8. Run: ./run_iteration.csh
+
+TO MOVE TO NEXT ITERATION:
+
+1. You may want to check to make sure your adjoint forcing (*.ncl) file doesn't need to be updated, since the perturbed run you are starting with may have (e.g.) placed a weather feature in a slightly different location. Part of the strength of this iterative technique is that the response function can be changed on each iteration to account for these kinds of drift.
+
+2. Update run_iteration.csh by changing iter_name and next_iter_name to update to new values (e.g. for the iteration after iter_00, change iter_name to iter_01 and next_iter_name to iter_02
+
+3. Run: ./run_iteration.csh
