@@ -28,6 +28,12 @@
 #           can be introduced, which throws off calculations of del_R
 #           later.
 #
+#
+# 05/31/23: Bug-fix to computing compensating moisture term: The exponent
+#           for init_es_p was being computed incorrectly by failing to
+#           encapsulate (init_t + tp), which violated order-of-ops and
+#           did not carry through multiplications correctly. This is
+#           fixed for computing new uvT*q* experiments.
 #########################################################################
 #
 # Import necessary modules
@@ -100,7 +106,7 @@ init_es = 6.11*np.power(10.,es_exp) #.................................... full m
 #
 # Compute saturation vapor pressure after perturbation
 #
-es_exp = np.divide(7.5*init_t+tp,237.3+init_t+tp) #...................... exponent of saturation vapor pressure
+es_exp = np.divide(7.5*(init_t+tp),237.3+(init_t+tp)) #.................. exponent of saturation vapor pressure
 init_es_p = 6.11*np.power(10.,es_exp) #.................................. full model (perturbed) saturation vapor pressure (hPa) [lev,lat,lon]
 #
 # Compute saturation mixing ratio, according to the equation provided here:
